@@ -183,7 +183,10 @@ export function readScreen(surface: string, lines = 50): string {
   requireHerdr();
   return execFileSync(
     "herdr",
-    ["pane", "read", surface, "--lines", `${Math.max(1, lines)}`, "--format", "text"],
+    // `recent-unwrapped` returns logical lines rather than the wrapped view, so
+    // output stays intact regardless of pane width — the exit sentinel and any
+    // marker we scan for cannot be split across visual lines.
+    ["pane", "read", surface, "--source", "recent-unwrapped", "--lines", `${Math.max(1, lines)}`, "--format", "text"],
     { encoding: "utf8" },
   );
 }
@@ -195,7 +198,7 @@ export async function readScreenAsync(surface: string, lines = 50): Promise<stri
   requireHerdr();
   const { stdout } = await execFileAsync(
     "herdr",
-    ["pane", "read", surface, "--lines", `${Math.max(1, lines)}`, "--format", "text"],
+    ["pane", "read", surface, "--source", "recent-unwrapped", "--lines", `${Math.max(1, lines)}`, "--format", "text"],
     { encoding: "utf8" },
   );
   return stdout;
