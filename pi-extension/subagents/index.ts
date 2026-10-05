@@ -24,7 +24,7 @@ import {
   closeSurface,
   shellEscape,
   readScreen,
-} from "./tmux.ts";
+} from "./surface.ts";
 
 import {
   countSessionEntryLines,
@@ -508,7 +508,7 @@ function muxUnavailableResult() {
     content: [
       {
         type: "text" as const,
-        text: `Subagents require tmux. ${muxSetupHint()}`,
+        text: `Subagents require a supported multiplexer. ${muxSetupHint()}`,
       },
     ],
     details: { error: "tmux not available" },
