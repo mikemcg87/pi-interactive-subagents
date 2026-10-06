@@ -233,6 +233,24 @@ function getToolExtensionPath(tool: string): string | undefined {
 }
 
 /**
+ * Path to herdr's pi agent integration, when this process runs under herdr.
+ *
+ * `herdr integration install pi` writes an env-gated extension into the pi
+ * agent config dir. A normal pi launch auto-discovers it, but a sandboxed
+ * subagent runs with `--no-extensions` and only re-adds tool-backing
+ * extensions — so without this the subagent's pane never reports lifecycle
+ * state, and herdr has to guess it from screen output. Returns undefined
+ * outside herdr, and the integration itself no-ops when HERDR_ENV is unset.
+ */
+function getHerdrAgentIntegrationPath(): string | undefined {
+  if (process.env.HERDR_ENV !== "1") return undefined;
+  const candidates = [join(getAgentConfigDir(), "extensions", "herdr-agent-state.ts")];
+  const localDir = process.env.PI_CODING_AGENT_DIR;
+  if (localDir) candidates.push(join(localDir, "extensions", "herdr-agent-state.ts"));
+  return candidates.find((path) => existsSync(path));
+}
+
+/**
  * When this process was spawned as a restricted subagent, the parent pins the
  * set of agents it may itself spawn via PI_SUBAGENT_ALLOWED. `null` means no
  * restriction (top-level session, or an unrestricted child).
@@ -869,6 +887,11 @@ function applySandboxToParts(
       const extPath = getToolExtensionPath(tool);
       if (extPath && existsSync(extPath)) extPaths.add(extPath);
     }
+    // Under herdr, re-add the daemon's agent integration so this subagent's
+    // pane reports lifecycle state and appears as a first-class agent, rather
+    // than being inferred from screen output. No-op outside herdr.
+    const herdrIntegration = getHerdrAgentIntegrationPath();
+    if (herdrIntegration) extPaths.add(herdrIntegration);
     for (const extPath of extPaths) {
       parts.push("-e", shellEscape(extPath));
     }
